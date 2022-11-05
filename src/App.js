@@ -3,8 +3,8 @@ import "./App.css";
 import styles from "./styles/Snake.module.css";
 
 const Config = {
-  height: 25,
-  width: 25,
+  height: 20,
+  width: 20,
   cellSize: 32,
 };
 
@@ -61,7 +61,7 @@ const Cell = ({ x, y, type }) => {
 const getFoodInRandomCell = () => ({
   x: Math.floor(Math.random() * Config.width),
   y: Math.floor(Math.random() * Config.width),
-  expireTime: new Date().getTime() + 10000,
+  expireTime: new Date().getTime() + 15000,
 });
 
 function App() {
@@ -78,9 +78,9 @@ function App() {
   // snake[0] is head and snake[snake.length - 1] is tail
   const [snake, setSnake] = useState(getDefaultSnake());
   const [direction, setDirection] = useState(Direction.Right);
-
   const [foods, setFoods] = useState(getDefaultFood());
   const [score, setScore] = useState(0);
+
 
   //restart the game
   const restartGame = () => {
@@ -91,10 +91,10 @@ function App() {
   };
 
   //remove the eaten food
-  const eraseFood = (food) => {
-    let newFoods = foods.filter(
-      (position) => position.x !== food.x || position.y !== food.y
-    );
+  const eraseFood = (position) => {
+    let newFoods = [...foods.filter(
+      (food) => position.x !== food.x || position.y !== food.y
+    )];
     setFoods(newFoods);
   };
 
@@ -105,21 +105,22 @@ function App() {
         const head = snake[0];
         const newHead = { x: head.x + direction.x, y: head.y + direction.y };
         //reappearing snake
-        if (newHead.x === -1) newHead.x = 24;
-        if (newHead.x === 25) newHead.x = 0;
-        if (newHead.y === -1) newHead.y = 24;
-        if (newHead.y === 25) newHead.y = 0;
+        if (newHead.x === -1) newHead.x = Config.width - 1;;
+        if (newHead.x === Config.width) newHead.x = 0;
+        if (newHead.y === -1) newHead.y = Config.height - 1;
+        if (newHead.y === Config.height) newHead.y = 0;
+
         //restarting game
         if (isSnake(newHead)) {
-          restartGame();
+          let test = isSnake(newHead);
+          // recheck for some glitch remain , hopefully will solve this someday
+          if (snake.find((position) => position.x === test.x && position.y === test.y)) {
+             restartGame();
+          }
         }
-        // make a new snake by extending head
-        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
-        const newSnake = [newHead, ...snake];
-
-        // remove tail
+       
+        let newSnake = [newHead, ...snake];
         newSnake.pop();
-
         return newSnake;
       });
     };
@@ -130,6 +131,7 @@ function App() {
     return () => clearInterval(timer);
   }, [direction]);
 
+ 
   // update score and snake size whenever head touches a food
   useEffect(() => {
     const head = snake[0];
@@ -156,14 +158,12 @@ function App() {
   // appear random food every 3 seconds
   useEffect(() => {
     const appearFood = () => {
-      // console.log(foods)
       setFoods((foods) => {
         let newFood = getFoodInRandomCell();
-        while (isSnake(newFood)) {
+        while (isSnake(newFood) || isFood(newFood)) {
           newFood = getFoodInRandomCell();
         }
         let newFoods = [newFood, ...foods];
-        // console.log(newFoods)
         return newFoods;
       });
     };
@@ -176,18 +176,16 @@ function App() {
   //disappearing expired food
   useEffect(() => {
     const disappearFood = () => {
-      let currentTime = new Date().getTime();
+     let currentTime = new Date().getTime();
       let newFoods;
       setFoods((foods) => {
-        newFoods = foods.filter(food => food.expireTime > currentTime);
-        console.log(newFoods)
+        newFoods = [...foods.filter(food => food.expireTime > currentTime)];
         return newFoods;
       });
-     
     };
 
     // removeFood();
-    const timer = setInterval(disappearFood, 1000);
+    const timer = setInterval(disappearFood, 100);
 
     return () => clearInterval(timer);
   }, []);
@@ -249,14 +247,14 @@ function App() {
     return () => window.removeEventListener("keydown", handleNavigation);
   }, []);
 
-  // ?. is called optional chaining
-  // see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining
   // const isFood = ({ x, y }) => food?.x === x && food?.y === y;
   const isFood = ({ x, y }) =>
     foods.find((position) => position.x === x && position.y === y);
 
-  const isSnake = ({ x, y }) =>
-    snake.find((position) => position.x === x && position.y === y);
+  const isSnake = ({ x, y }) => {
+    return snake.find((position) => position.x === x && position.y === y);
+  }
+    
 
   const cells = [];
   for (let x = 0; x < Config.width; x++) {
@@ -279,6 +277,7 @@ function App() {
           style={{ width: Config.width * Config.cellSize }}
         >
           Score: {score}
+          <p>Foods on the board {foods.length}</p>
         </div>
         <div
           className={styles.grid}

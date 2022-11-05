@@ -4,7 +4,7 @@
     justify-content: center;
     width: 100vw;
     height: 100vh;
-    overflow: hidden;
+    overflow: scroll;
     flex-direction: column;
   }
   
@@ -15,6 +15,7 @@
     margin-bottom: 8px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 16px;
   }
   
